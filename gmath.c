@@ -25,27 +25,90 @@
 //lighting functions
 color get_lighting( double *normal, double *view, color alight, double light[2][3], double *areflect, double *dreflect, double *sreflect) {
   color i;
+  color aref, dref, sref;
+  normalize(normal);
+  normalize(light[LOCATION]);
+  normalize(view);
+  aref = calculate_ambient(alight,areflect);
+  dref = calculate_diffuse(light, dreflect, normal);
+  sref = calculate_specular(light, sreflect, view, normal);
+  i.red = aref.red + dref.red + sref.red;
+  i.green = aref.green + dref.green + sref.green;
+  i.blue = aref.blue + dref.blue + sref.blue;
+  limit_color(&i);
   return i;
 }
 
 color calculate_ambient(color alight, double *areflect ) {
   color a;
+  a.red = alight.red * areflect[RED];
+  a.green = alight.green * areflect[GREEN];
+  a.blue = alight.blue * areflect[BLUE];
   return a;
 }
 
 color calculate_diffuse(double light[2][3], double *dreflect, double *normal ) {
   color d;
+  double cos;
+  normalize(normal);
+  normalize(light[LOCATION]);
+  cos = dot_product(normal, light[LOCATION]);
+  if(cos < 0){
+    cos = 0;
+  }
+  d.red = light[COLOR][RED] * dreflect[RED] * cos;
+  d.green = light[COLOR][GREEN] * dreflect[GREEN] * cos;
+  d.blue = light[COLOR][BLUE] * dreflect[BLUE] * cos;
   return d;
 }
 
 color calculate_specular(double light[2][3], double *sreflect, double *view, double *normal ) {
-
   color s;
+  double cos;
+  int i;
+  double ref[3];
+  normalize(normal);
+  normalize(light[LOCATION]);
+  normalize(ref);
+  cos = 2 * dot_product(normal, light[LOCATION]);
+  if(cos < 0){
+    cos = 0;
+  }
+  for(i = 0;i<3;i++){
+    ref[i] = normal[i] * cos - light[LOCATION][i];
+  }
+  cos = dot_product(ref, view);
+  if(cos < 0){
+    cos = 0;
+  }
+  cos = pow(cos, SPECULAR_EXP);
+
+  s.red = light[COLOR][RED] * sreflect[RED] * cos;
+  s.green = light[COLOR][GREEN] * sreflect[GREEN] * cos;
+  s.blue = light[COLOR][BLUE] * sreflect[BLUE] * cos;
   return s;
 }
 
 //limit each component of c to a max of 255
 void limit_color( color * c ) {
+  if(c->red > 255){
+    c->red = 255;
+  }
+  if(c->green > 255){
+    c->green = 255;
+  }
+  if(c->blue > 255){
+    c->blue = 255;
+  }
+  if(c->red < 0){
+    c->red = 0;
+  }
+  if(c->green < 0){
+    c->green = 0;
+  }
+  if(c->blue < 0){
+    c->blue = 0;
+  }
 }
 
 //vector functions
